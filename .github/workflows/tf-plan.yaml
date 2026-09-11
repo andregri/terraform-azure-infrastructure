@@ -9,6 +9,10 @@ on:
 jobs:
   plan:
     runs-on: ubuntu-latest
+
+    env:
+      TVF_VAR_resource_group_name: ${{ vars.TF_RESOURCE_GROUP_NAME }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
