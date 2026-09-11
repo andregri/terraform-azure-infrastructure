@@ -24,13 +24,13 @@ jobs:
         with:
           terraform_version: 1.16.1
 
-      - name: Terraform Init
-        run: make tf-init-backend
-
       - name: Azure login
         uses: azure/login@v3
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Terraform Init
+        run: make tf-init-backend
 
       - name: Terraform Plan
         run: terraform plan -out=tfplan -input=false
