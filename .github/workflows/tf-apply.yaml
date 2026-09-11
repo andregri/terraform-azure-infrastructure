@@ -1,15 +1,11 @@
-name: terraform plan
+name: terraform apply
 on:
-  pull_request:
+  push:
     branches:
       - main
-    types:
-     - opened
-     - synchronize
-     - reopened
 
 jobs:
-  plan:
+  apply:
     runs-on: ubuntu-latest
 
     env:
@@ -32,11 +28,10 @@ jobs:
       - name: Terraform Init
         run: make tf-init-backend
 
-      - name: Terraform Plan
-        run: terraform plan -out=tfplan -input=false
-      
-      - uses: actions/upload-artifact@v7
+      - name: Download Terraform plan
+        uses: actions/download-artifact@v7
         with:
           name: tfplan
-          path: tfplan
-          retention-days: 1
+
+      - name: Terraform apply
+        run: terraform apply tfplan -auto-approve
