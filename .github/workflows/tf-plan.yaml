@@ -3,6 +3,7 @@ on:
   pull_request:
     branches:
       - main
+
 jobs:
   plan:
     runs-on: ubuntu-latest
@@ -28,4 +29,10 @@ jobs:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Terraform Plan
-        run: terraform plan
+        run: terraform plan -out=tfplan -input=false
+      
+      - uses: actions/upload-artifact@v7
+        with:
+          name: tfplan
+          path: tfplan
+          retention-days: 1
