@@ -14,7 +14,7 @@ export AZURE_CLIENT_ID="get from acloudguru"
 export AZURE_CLIENT_SECRET="get from acloudguru"
 ```
 
-Create the json file:
+Print the Azure credentials and create a secret in Github Action Settings name **AZURE_CREDENTIALS**:
 ```bash
 cat <<EOF
 {
@@ -24,4 +24,9 @@ cat <<EOF
     "clientId": "${AZURE_CLIENT_ID}"
 }
 EOF
+```
+
+Create variables in Github Action Settings for terraform variables:
+```
+TF_RESOURCE_GROUP_NAME="***"
 ```
