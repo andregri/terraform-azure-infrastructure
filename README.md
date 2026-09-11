@@ -39,3 +39,10 @@ source ../.env
 terraform apply
 terraform plan
 ```
+
+## Terraform init to setup bakend configuration
+
+```bash
+source .env
+make tf-init-backend
+```
