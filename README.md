@@ -30,3 +30,12 @@ Create variables in Github Action Settings for terraform variables:
 ```
 TF_RESOURCE_GROUP_NAME="***"
 ```
+
+## Create storage account for tfstate
+```bash
+cd bootstrap
+terraform init
+source ../.env
+terraform apply
+terraform plan
+```
