@@ -1,0 +1,30 @@
+name: terraform plan
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.7.6
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Azure login
+        uses: azure/login@v3
+        with:
+          creds: ${{ vars.AZURE_CREDENTIALS }}
+
+      - name: Terraform Plan
+        run: terraform plan
