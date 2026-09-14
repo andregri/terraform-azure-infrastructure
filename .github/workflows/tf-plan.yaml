@@ -17,6 +17,7 @@ jobs:
       ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
       ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
       ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      ARM_USE_CLI: "false"
       TF_IN_AUTOMATION: "true"
       TF_VAR_resource_group_name: ${{ vars.TF_RESOURCE_GROUP_NAME }}
 
