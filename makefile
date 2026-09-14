@@ -6,5 +6,5 @@ tf-init-backend:
 		-backend-config="storage_account_name=tfstatestorageacc4562" \
 		-backend-config="container_name=tfstate" \
 		-backend-config="key=terraform.tfstate" \
-		-backend-config="use_azuread_auth=true"
-      	-backend-config="use_oidc=false"
+		-backend-config="use_azuread_auth=true" \
+		-backend-config="use_oidc=false"
