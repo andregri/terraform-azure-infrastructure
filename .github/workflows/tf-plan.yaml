@@ -30,6 +30,13 @@ jobs:
         with:
           terraform_version: 1.16.1
 
+      - name: Check Azure credentials
+        run: |
+          test -n "$ARM_CLIENT_ID" && echo "ARM_CLIENT_ID is set"
+          test -n "$ARM_CLIENT_SECRET" && echo "ARM_CLIENT_SECRET is set"
+          test -n "$ARM_TENANT_ID" && echo "ARM_TENANT_ID is set"
+          test -n "$ARM_SUBSCRIPTION_ID" && echo "ARM_SUBSCRIPTION_ID is set"
+
       - name: Terraform Init
         run: make tf-init-backend
 
