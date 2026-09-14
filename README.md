@@ -6,12 +6,14 @@ Login to Azure using cli:
 az login
 ```
 
-Get azure parameters:
+Get Azure subscription id:
 ```bash
-export AZURE_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
-export AZURE_TENANT_ID=$(az account show --query tenantId -o tsv)
-export AZURE_CLIENT_ID="get from acloudguru"
-export AZURE_CLIENT_SECRET="get from acloudguru"
+az account show --query id -o tsv
+```
+
+Get Azure tenant id:
+```bash
+az account show --query tenantId -o tsv
 ```
 
 ## Create storage account for tfstate
@@ -29,29 +31,10 @@ source .env
 make tf-init-backend
 ```
 
-## Option Github: Prepare variables for Github Actions
-
-Print the Azure credentials and create a secret in Github Action Settings name **AZURE_CREDENTIALS**:
-```bash
-cat <<EOF
-{
-    "clientSecret": "${AZURE_CLIENT_SECRET}",
-    "subscriptionId": "${AZURE_SUBSCRIPTION_ID}",
-    "tenantId": "${AZURE_TENANT_ID}",
-    "clientId": "${AZURE_CLIENT_ID}"
-}
-EOF
-```
-
-Create variables in Github Action Settings for terraform variables:
-```
-TF_RESOURCE_GROUP_NAME="***"
-```
-
-## Option Gitlab: Prepare Gitlab CICD variables
-Create the following variables on Gitlab CICD:
+## Setup CICD variables
+Create the following variables or secrets on the CICD page of Gitlab or Github:
 - ARM_CLIENT_ID
-- ARM_CLIENT_SECRET
+- ARM_CLIENT_SECRET (as a secret)
 - ARM_TENANT_ID
 - ARM_SUBSCRIPTION_ID
 - TF_RESOURCE_GROUP_NAME
