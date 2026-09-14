@@ -1,0 +1,53 @@
+stages:
+- plan
+- apply
+
+default:
+  image:
+    name: hashicorp/terraform:1.16.1
+    entrypoint: [""]
+  before_script:
+    - terraform --version
+
+variables:
+  ARM_CLIENT_ID: "$AZURE_CLIENT_ID"
+  ARM_CLIENT_SECRET: "$AZURE_CLIENT_SECRET"
+  ARM_TENANT_ID: "$AZURE_TENANT_ID"
+  ARM_SUBSCRIPTION_ID: "$AZURE_SUBSCRIPTION_ID"
+  TF_IN_AUTOMATION: "true"
+
+.terraform_init:
+  before_script:
+    - >
+      terraform init
+      -backend-config="resource_group_name=${TF_VAR_resource_group_name}"
+      -backend-config="storage_account_name=tfstatestorageacc4562"
+      -backend-config="container_name=tfstate"
+      -backend-config="key=terraform.tfstate"
+      -backend-config="use_azuread_auth=true"
+      -backend-config="use_oidc=false"
+
+terraform_plan:
+  stage: plan
+  extends:
+    - .terraform_init
+  script:
+    - terraform plan -out=tfplan -input=false
+  artifacts:
+    paths:
+      - tfplan
+    expire_in: 1 hour
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH       # Run for all changes to the default branch
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'  # Run for all changes to a merge request's source branch
+
+terraform_apply:
+  stage: apply
+  extends:
+    - .terraform_init
+  script:
+    - terraform apply -auto-approve tfplan
+  dependencies:
+    - terraform_plan
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH       # Run for all changes to the default branch
