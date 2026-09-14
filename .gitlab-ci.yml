@@ -3,23 +3,18 @@ stages:
 - apply
 
 default:
-  image: hashicorp/terraform:1.16.1
+  image:
+    name: hashicorp/terraform:1.16.1
+    entrypoint: [""]
   before_script:
     - terraform --version
 
-.azure_login:
-  before_script:
-    - apk add --no-cache bash curl jq python3
-    - curl -sL https://aka.ms/InstallAzureCLIDeb | bash
-
-    # Login to Azure using GitLab's OIDC token
-    - az login --service-principal
-        --username "$AZURE_CLIENT_ID"
-        --tenant "$AZURE_TENANT_ID"
-        --federated-token "$GITLAB_OIDC_TOKEN"
-        --service-principal
-
-    - az account set --subscription "$AZURE_SUBSCRIPTION_ID"
+variables:
+  ARM_CLIENT_ID: "$AZURE_CLIENT_ID"
+  ARM_CLIENT_SECRET: "$AZURE_CLIENT_SECRET"
+  ARM_TENANT_ID: "$AZURE_TENANT_ID"
+  ARM_SUBSCRIPTION_ID: "$AZURE_SUBSCRIPTION_ID"
+  TF_IN_AUTOMATION: "true"
 
 .terraform_init:
   before_script:
@@ -29,11 +24,12 @@ default:
       -backend-config="storage_account_name=tfstatestorageacc4562"
       -backend-config="container_name=tfstate"
       -backend-config="key=terraform.tfstate"
+      -backend-config="use_azuread_auth=true"
+      -backend-config="use_oidc=false"
 
 terraform_plan:
   stage: plan
   extends:
-    - .azure_login
     - .terraform_init
   script:
     - terraform plan -out=tfplan -input=false
@@ -42,16 +38,16 @@ terraform_plan:
       - tfplan
     expire_in: 1 hour
   rules:
-    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH       # Run for all changes to the default branch
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'  # Run for all changes to a merge request's source branch
 
 terraform_apply:
   stage: apply
   extends:
-    - .azure_login
     - .terraform_init
   script:
     - terraform apply -auto-approve tfplan
   dependencies:
     - terraform_plan
   rules:
-    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH       # Run for all changes to the default branch
