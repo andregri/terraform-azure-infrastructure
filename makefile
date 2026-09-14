@@ -5,4 +5,6 @@ tf-init-backend:
 		-backend-config="resource_group_name=${TF_VAR_resource_group_name}" \
 		-backend-config="storage_account_name=tfstatestorageacc4562" \
 		-backend-config="container_name=tfstate" \
-		-backend-config="key=terraform.tfstate"
+		-backend-config="key=terraform.tfstate" \
+		-backend-config="use_azuread_auth=true"
+      	-backend-config="use_oidc=false"
