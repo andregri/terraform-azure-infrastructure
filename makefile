@@ -16,3 +16,8 @@ tf-init-backend:
 		-backend-config="key=terraform.tfstate" \
 		-backend-config="use_azuread_auth=true" \
 		-backend-config="use_oidc=false"
+
+.PHONY: kubeadm-cluster
+kubeadm-cluster:
+	@echo "Creating Kubernetes cluster using kubeadm..."
+	cd kubeadm-cluster && terraform apply -auto-approve
