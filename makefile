@@ -1,3 +1,11 @@
+.PHONY: bootstrap
+
+bootstrap/terraform.tfstate:
+	@echo "Bootstrapping Terraform backend..."
+	cd bootstrap && terraform apply -auto-approve
+
+bootstrap: bootstrap/terraform.tfstate
+
 .PHONY: tf-init-backend
 tf-init-backend:
 	@echo "Initializing Terraform backend..."
