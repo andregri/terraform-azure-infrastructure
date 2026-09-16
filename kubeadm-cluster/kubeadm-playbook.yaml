@@ -1,0 +1,109 @@
+###
+
+- name: Init control plane
+  hosts: "{{ groups['control_plane'][0] }}"
+  gather_facts: yes
+  become: true
+  tasks:
+    - name: Set Kubernetes release version v1.33.12
+      ansible.builtin.set_fact:
+        k8s_release_version: "v1.33.12"
+
+    - name: kubeadm init
+      ansible.builtin.shell:
+        cmd: >
+          kubeadm init --pod-network-cidr=192.168.0.0/16 
+          --kubernetes-version "{{ k8s_release_version }}" 
+          --control-plane-endpoint "{{ hostvars[groups['control_plane'][0]]['private_ip'] }}:6443"
+        creates: /etc/kubernetes/admin.conf
+      register: kubeadm_init
+      changed_when: kubeadm_init.rc == 0
+    
+    - name: Create .kube directory
+      ansible.builtin.file:
+        path: /home/{{ ansible_user }}/.kube
+        state: directory
+        mode: "0755"
+        owner: "{{ ansible_user }}"
+
+    - name: Copy admin.conf to user's kube config
+      ansible.builtin.copy:
+        src: /etc/kubernetes/admin.conf
+        dest: /home/{{ ansible_user }}/.kube/config
+        remote_src: true
+        mode: "0644"
+        owner: "{{ ansible_user }}"
+
+    - name: Get join command
+      ansible.builtin.shell:
+        cmd: kubeadm token create --print-join-command
+      register: join_command
+      changed_when: false
+
+    - name: Get certificate key
+      ansible.builtin.shell:
+        cmd: kubeadm init phase upload-certs --upload-certs
+      register: certificate_key
+      changed_when: false
+
+    - name: Set certificate key fact
+      ansible.builtin.set_fact:
+        control_plane_certificate_key: "{{ certificate_key.stdout_lines[-1] }}"
+    
+    - name: Allow all access to tcp port 6443
+      community.general.ufw:
+        rule: allow
+        port: '6443'
+        proto: tcp
+
+###
+
+- name: Join other control plane nodes to the cluster
+  hosts: "control_plane:!{{ groups['control_plane'][0] }}"
+  gather_facts: yes
+  become: true
+  tasks:
+    - name: Show join command
+      ansible.builtin.debug:
+        msg: "{{ hostvars[groups['control_plane'][0]].join_command.stdout }}"
+
+    - name: Show certificate key
+      ansible.builtin.debug:
+        msg: "{{ hostvars[groups['control_plane'][0]].certificate_key.stdout_lines[-1] }}"
+
+    - name: Execute join command
+      ansible.builtin.shell:
+        cmd: >
+          {{ hostvars[groups['control_plane'][0]].join_command.stdout }}
+          --control-plane
+          --certificate-key "{{ hostvars[groups['control_plane'][0]].control_plane_certificate_key }}"
+        creates: /etc/kubernetes/kubelet.conf
+      register: kubeadm_join
+
+    - name: Show join result
+      ansible.builtin.debug:
+        var: kubeadm_join
+
+###
+
+- name: Join worker nodes to the cluster
+  hosts: "{{ groups['workers'] }}"
+  gather_facts: yes
+  become: true
+  tasks:
+    - name: Execute join command
+      ansible.builtin.shell:
+        cmd: >
+          {{ hostvars[groups['control_plane'][0]].join_command.stdout }}
+        creates: /etc/kubernetes/kubelet.conf
+
+###
+
+- name: Relabel worker nodes
+  hosts: "{{ groups['control_plane'][0] }}"
+  gather_facts: yes
+  tasks:
+    - name: Label the node
+      ansible.builtin.shell:
+        cmd: kubectl label node {{ item }} node-role.kubernetes.io/worker=worker
+      loop: "{{ groups['workers'] }}"
