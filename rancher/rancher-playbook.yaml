@@ -1,0 +1,87 @@
+- name: Install Rancher manager
+  hosts: "{{ groups['control_plane'][0] }}"
+  gather_facts: yes
+  become: true
+  tasks:
+    - name: Get nodes
+      ansible.builtin.shell:
+        cmd: /var/lib/rancher/rke2/bin/kubectl get nodes --kubeconfig /etc/rancher/rke2/rke2.yaml
+      become: true
+      register: get_nodes
+
+    - name: Print nodes
+      ansible.builtin.debug:
+        msg: "{{ get_nodes.stdout_lines }}"
+    
+    - name: Download helm
+      ansible.builtin.get_url:
+        url: https://get.helm.sh/helm-v4.3.0-linux-amd64.tar.gz
+        checksum: sha256:https://get.helm.sh/helm-v4.3.0-linux-amd64.tar.gz.sha256sum
+        dest: /opt
+
+    - name: Extract helm archive
+      ansible.builtin.unarchive:
+        src: /opt/helm-v4.3.0-linux-amd64.tar.gz
+        dest: /opt
+        remote_src: yes
+    
+    - name: Copy helm binary
+      ansible.builtin.copy:
+        src: /opt/linux-amd64/helm
+        dest: /usr/local/bin/helm
+        owner: root
+        group: root
+        mode: "0755"
+        remote_src: true
+
+    - name: Add Rancher helm repo
+      ansible.builtin.shell:
+        cmd: helm repo add rancher-stable https://releases.rancher.com/server-charts/stable
+      become: true
+    
+    # - name: Create namespace
+    #   ansible.builtin.shell:
+    #     cmd: /var/lib/rancher/rke2/bin/kubectl create ns cattle-system --kubeconfig /etc/rancher/rke2/rke2.yaml
+    #   register: kubectl_get_ns
+    #   become: true
+
+    - name: Add jetstack helm repo
+      ansible.builtin.shell:
+        cmd: helm repo add jetstack https://charts.jetstack.io
+      become: true
+
+    - name: Update helm repo
+      ansible.builtin.shell:
+        cmd: helm repo update
+      become: true
+
+    - name: Install cert-manager helm chart
+      ansible.builtin.shell:
+        cmd: |
+          helm upgrade --install cert-manager jetstack/cert-manager \
+          --namespace cert-manager \
+          --create-namespace \
+          --set crds.enabled=true \
+          --kubeconfig /etc/rancher/rke2/rke2.yaml
+      become: true
+
+    - name: Install rancher helm chart
+      ansible.builtin.shell:
+        cmd: |
+          helm upgrade --install rancher rancher-stable/rancher \
+          --namespace cattle-system \
+          --create-namespace \
+          --set hostname=rancher.my.org \
+          --set bootstrapPassword=admin \
+          --kubeconfig /etc/rancher/rke2/rke2.yaml
+      become: true
+
+    - name: Get rancher pod and svc
+      ansible.builtin.shell:
+        cmd: /var/lib/rancher/rke2/bin/kubectl get po,svc -n cattle-system --kubeconfig /etc/rancher/rke2/rke2.yaml
+      register: kubectl_get_po_cmd
+      become: true
+    
+    - name: Print kubectl get output
+      ansible.builtin.debug:
+        msg: "{{ kubectl_get_po_cmd.stdout_lines }}"

@@ -1,0 +1,90 @@
+###
+
+- name: Common configuration on all control-plane nodes
+  hosts: "{{ groups['control_plane'] }}"
+  gather_facts: yes
+  become: true
+  tasks:
+    - name: Create /etc/rancher/rke2/ directory
+      ansible.builtin.file:
+        path: /etc/rancher/rke2
+        state: directory
+        recurse: yes
+
+- name: Install rke2 on first nodes
+  hosts: "{{ groups['control_plane'][0] }}"
+  gather_facts: yes
+  become: true
+  tasks:
+    - name: Create rke2 config file
+      ansible.builtin.copy:
+        dest: /etc/rancher/rke2/config.yaml
+        content: |
+          token: my-shared-secret
+          tls-san:
+            - {{ kube_vip }}
+          node-ip: {{ hostvars[groups['control_plane'][0]].private_ip }}
+        owner: root
+        group: root
+        mode: '0644'
+      become: true
+
+    - name: Set rke2 version
+      ansible.builtin.set_fact:
+        rke2_version: "v1.36.4+rke2r1"
+    
+    - name: Install rke2
+      ansible.builtin.shell:
+        cmd: curl -sfL https://get.rke2.io | INSTALL_RKE2_VERSION="{{ rke2_version }}" sh -
+        creates: /etc/rancher/rke2/rke2.yaml
+      become: true
+
+    - name: Enable rke2 service
+      ansible.builtin.systemd:
+        state: started
+        name: rke2-server
+        daemon_reload: true
+        enabled: true
+
+    - name: Get nodes
+      ansible.builtin.shell:
+        cmd: /var/lib/rancher/rke2/bin/kubectl get nodes --kubeconfig /etc/rancher/rke2/rke2.yaml
+      become: true
+      register: get_nodes
+
+    - name: Print nodes
+      ansible.builtin.debug:
+        msg: "{{ get_nodes.stdout_lines }}"
+
+- name: Add other rke2 nodes
+  hosts: "{{ groups['control_plane'][1:] }}"
+  gather_facts: yes
+  become: true
+  tasks:
+    - name: Create rke2 config file
+      ansible.builtin.copy:
+        dest: /etc/rancher/rke2/config.yaml
+        content: |
+          token: my-shared-secret
+          server: https://{{ kube_vip }}:9345
+        owner: root
+        group: root
+        mode: '0644'
+      become: true
+
+    - name: Set rke2 version
+      ansible.builtin.set_fact:
+        rke2_version: "v1.36.4+rke2r1"
+    
+    - name: Install rke2
+      ansible.builtin.shell:
+        cmd: curl -sfL https://get.rke2.io | INSTALL_RKE2_VERSION="{{ rke2_version }}" sh -
+        creates: /etc/rancher/rke2/rke2.yaml
+      become: true
+
+    - name: Enable rke2 service
+      ansible.builtin.systemd:
+        state: started
+        name: rke2-server
+        daemon_reload: true
+        enabled: true
