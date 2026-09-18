@@ -3,7 +3,7 @@ locals {
 }
 
 module "rancher-cluster" {
-  source = "git::https://github.com/andregri/terraform-module-azure-vm.git?ref=feat/outputs"
+  source = "git::https://github.com/andregri/terraform-module-azure-vm.git?ref=v1.2.1"
 
   enable_bastion      = true
   prefix              = local.prefix
