@@ -76,26 +76,29 @@ kubectl label node ${WORKER_NODE_HOSTNAME} node-role.kubernetes.io/worker=worker
 ```bash
 az login
 
-source env
+export TF_VAR_resource_group_name="1-29daaedf-playground-sandbox"
 
-az network bastion tunnel --name "multinode-network-bastion" --resource-group ${TF_VAR_resource_group_name} --target-resource-id ${VM_HOST_ID_0} --resource-port "22" --port "10022" &
-az network bastion tunnel --name "multinode-network-bastion" --resource-group ${TF_VAR_resource_group_name} --target-resource-id ${VM_HOST_ID_1} --resource-port "22" --port "10023" &
-az network bastion tunnel --name "multinode-network-bastion" --resource-group ${TF_VAR_resource_group_name} --target-resource-id ${VM_HOST_ID_2} --resource-port "22" --port "10024" &
-az network bastion tunnel --name "multinode-network-bastion" --resource-group ${TF_VAR_resource_group_name} --target-resource-id ${VM_HOST_ID_3} --resource-port "22" --port "10025" &
+make tf-cleanup FOLDER=bootstrap
+make tf-init-backend FOLDER=bootstrap
+make tf-apply FOLDER=bootstrap
 
-ssh -o StrictHostKeyChecking=accept-new -p 10022 testadmin@127.0.0.1 # ask for vm password
-exit
-
-ssh -o StrictHostKeyChecking=accept-new -p 10023 testadmin@127.0.0.1 # ask for vm password
-exit
-
-ssh -o StrictHostKeyChecking=accept-new -p 10024 testadmin@127.0.0.1 # ask for vm password
-exit
-
-ssh -o StrictHostKeyChecking=accept-new -p 10025 testadmin@127.0.0.1 # ask for vm password
-exit
+make tf-cleanup FOLDER=kubeadm-cluster
+make tf-init-backend FOLDER=kubeadm-cluster
+make tf-apply FOLDER=kubeadm-cluster
 
 cd kubeadm-cluster
+source env
+
+az network bastion tunnel --name "${BASTION_HOST_NAME}" --resource-group ${TF_VAR_resource_group_name} --target-resource-id ${VM_HOST_ID_0} --resource-port "22" --port "${VM_0_PORT}" &
+az network bastion tunnel --name "${BASTION_HOST_NAME}" --resource-group ${TF_VAR_resource_group_name} --target-resource-id ${VM_HOST_ID_1} --resource-port "22" --port "${VM_1_PORT}" &
+az network bastion tunnel --name "${BASTION_HOST_NAME}" --resource-group ${TF_VAR_resource_group_name} --target-resource-id ${VM_HOST_ID_2} --resource-port "22" --port "${VM_2_PORT}" &
+az network bastion tunnel --name "${BASTION_HOST_NAME}" --resource-group ${TF_VAR_resource_group_name} --target-resource-id ${VM_HOST_ID_3} --resource-port "22" --port "${VM_3_PORT}" &
+
+# register host key
+ssh -o StrictHostKeyChecking=accept-new -p ${VM_0_PORT} testadmin@127.0.0.1
+ssh -o StrictHostKeyChecking=accept-new -p ${VM_1_PORT} testadmin@127.0.0.1
+ssh -o StrictHostKeyChecking=accept-new -p ${VM_2_PORT} testadmin@127.0.0.1
+ssh -o StrictHostKeyChecking=accept-new -p ${VM_3_PORT} testadmin@127.0.0.1
 
 ansible-playbook -i inventory.yaml kubeadm-playbook.yaml -u testadmin -k
 

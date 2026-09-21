@@ -1,5 +1,5 @@
 module "kubeadm-cluster" {
-  source = "git::https://github.com/andregri/terraform-module-azure-vm.git?ref=v1.2.0"
+  source = "git::https://github.com/andregri/terraform-module-azure-vm.git?ref=v1.2.1"
 
   enable_bastion      = true
   prefix              = "multinode"  
@@ -21,9 +21,19 @@ module "kubeadm-cluster" {
 
 resource "local_file" "env" {
   filename = "${path.module}/env"
-  content  = join("\n", [
-    for i, id in module.kubeadm-cluster.vm_ids : "export VM_HOST_ID_${i}=\"${id}\""
-  ])
+  content = join("\n", concat(
+    [
+      for i, id in module.kubeadm-cluster.vm_ids :
+      "export VM_HOST_ID_${i}=\"${id}\""
+    ],
+    [
+      "export BASTION_HOST_NAME=${module.kubeadm-cluster.bastion_host_name}"
+    ],
+    [
+      for i, _ in module.kubeadm-cluster.vm_hostnames :
+      "export VM_${i}_PORT=${10022 + i}"
+    ]
+  ))
 }
 
 resource "local_file" "inventory" {

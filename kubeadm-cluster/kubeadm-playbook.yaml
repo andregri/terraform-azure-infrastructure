@@ -107,3 +107,101 @@
       ansible.builtin.shell:
         cmd: kubectl label node {{ item }} node-role.kubernetes.io/worker=worker
       loop: "{{ groups['workers'] }}"
+
+- name: Install CNI Calico and validate cluster
+  hosts: "{{ groups['control_plane'][0] }}"
+  gather_facts: yes
+  tasks:
+    - name: Pin Helm version
+      ansible.builtin.set_fact:
+        helm_version: "v4.3.0"
+
+    - name: Download helm
+      ansible.builtin.get_url:
+        url: https://get.helm.sh/helm-{{ helm_version }}-linux-amd64.tar.gz
+        checksum: sha256:https://get.helm.sh/helm-{{ helm_version }}-linux-amd64.tar.gz.sha256sum
+        dest: /opt
+      become: true
+
+    - name: Extract helm archive
+      ansible.builtin.unarchive:
+        src: /opt/helm-{{ helm_version }}-linux-amd64.tar.gz
+        dest: /opt
+        remote_src: yes
+      become: true
+    
+    - name: Copy helm binary
+      ansible.builtin.copy:
+        src: /opt/linux-amd64/helm
+        dest: /usr/local/bin/helm
+        owner: "{{ ansible_user }}"
+        mode: "0755"
+        remote_src: true
+      become: true
+
+    - name: Add Calico helm repo
+      ansible.builtin.shell:
+        cmd: helm repo add projectcalico https://docs.tigera.io/calico/charts
+    
+    - name: Update helm repos
+      ansible.builtin.shell:
+        cmd: helm repo update
+    
+    - name: Pin Calico version
+      ansible.builtin.set_fact:
+        calico_version: "v3.32.0"
+
+    - name: Install calico crd
+      ansible.builtin.shell:
+        cmd: >
+          helm template calico-crds projectcalico/crd.projectcalico.org.v1 --version {{ calico_version }}
+          | kubectl apply --server-side -f -
+    
+    - name: Install calico repo
+      ansible.builtin.shell:
+        cmd: |
+          helm upgrade --install calico projectcalico/tigera-operator \
+            --version {{ calico_version }} \
+            --namespace tigera-operator \
+            --create-namespace
+
+    - name: Wait nodes are ready
+      ansible.builtin.shell:
+        cmd: kubectl wait --for=condition=Ready nodes --all --timeout=2m
+    
+    - name: Wait coredns pod is Running
+      ansible.builtin.shell:
+        cmd: kubectl wait --for=condition=Ready pod -l k8s-app=kube-dns -n kube-system --timeout=5m
+
+    - name: kubectl get kube-system pods
+      ansible.builtin.shell:
+        cmd: kubectl get po -n kube-system
+      register: kubectl_get_pod
+      changed_when: false
+
+    - name: show get pods
+      ansible.builtin.debug:
+        msg: "{{ kubectl_get_pod.stdout_lines }}"
+      changed_when: false
+
+    - name: kubectl get nodes
+      ansible.builtin.shell:
+        cmd: kubectl get nodes
+      register: kubectl_get_nodes
+      changed_when: false
+
+    - name: show get nodes
+      ansible.builtin.debug:
+        msg: "{{ kubectl_get_nodes.stdout_lines }}"
+      changed_when: false
+    
+    - name: DNS smoke test
+      ansible.builtin.shell:
+        cmd: kubectl run dns-test --image=busybox:1.36 --rm -it --restart=Never -- nslookup kubernetes.default
+      register: dns_nslookup
+      changed_when: false
+    
+    - name: Show nslookup output
+      ansible.builtin.debug:
+        msg: "{{ dns_nslookup.stdout_lines }}"
+      changed_when: false
