@@ -1,5 +1,6 @@
 locals {
   prefix = "rancher"
+  start_port = "50022"
 }
 
 module "rancher-cluster" {
@@ -34,7 +35,7 @@ resource "local_file" "env" {
     ],
     [
       for i, _ in module.rancher-cluster.vm_hostnames :
-      "export VM_${i}_PORT=${10022 + i}"
+      "export VM_${i}_PORT=${local.start_port + i}"
     ]
   ))
 }
@@ -45,16 +46,20 @@ resource "local_file" "inventory" {
     all : {
       vars : {
         kube_vip : azurerm_lb.kube-vip.private_ip_address
+        rke2_version: "v1.36.4+rke2r1"
+        rke2_shared_token: "my_shared_token"
+        public_lb_fqdn: azurerm_public_ip.rancher.fqdn
       },
       children : {
         control_plane : {
           hosts : {
             for i, host in module.rancher-cluster.vm_hostnames :
             host => {
-              private_ip : module.rancher-cluster.vm_private_ips[i],
-              ansible_user : "testadmin",
-              ansible_host : "127.0.0.1",
-              ansible_port : 10022 + i
+              private_ip : module.rancher-cluster.vm_private_ips[i]
+              ansible_user : "testadmin"
+              ansible_host : "127.0.0.1"
+              ansible_port : local.start_port + i
+              ansible_ssh_common_args : "-o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null"
             } if i < 3
           }
         },
@@ -62,10 +67,11 @@ resource "local_file" "inventory" {
           hosts : {
             for i, host in module.rancher-cluster.vm_hostnames :
             host => {
-              private_ip : module.rancher-cluster.vm_private_ips[i],
-              ansible_user : "testadmin",
-              ansible_host : "127.0.0.1",
-              ansible_port : 10022 + i
+              private_ip : module.rancher-cluster.vm_private_ips[i]
+              ansible_user : "testadmin"
+              ansible_host : "127.0.0.1"
+              ansible_port : local.start_port + i
+              ansible_ssh_common_args : "-o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null"
             } if i >= 3
           }
         }
