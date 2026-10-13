@@ -35,3 +35,5 @@ Or run a more complete playbook:
 ```bash
 ansible-playbook -i inventory.yaml /Users/andreagrillo/Downloads/github-personal/ansible-playbook-rke2-rancher/rke2_rancher.yaml  -u testadmin -k
 ```
+
+or download playbooks from: https://github.com/andregri/ansible-roles.git
