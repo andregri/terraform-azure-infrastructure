@@ -10,7 +10,7 @@ module "rancher-cluster" {
   prefix              = local.prefix
   location            = var.location
   resource_group_name = var.resource_group_name
-  vm_count            = 4
+  vm_count            = 3
   vm_size             = "Standard_D2s_v3"
 
   cloud_init = <<-EOF
@@ -48,7 +48,9 @@ resource "local_file" "inventory" {
         kube_vip : azurerm_lb.kube-vip.private_ip_address
         rke2_version: "v1.36.4+rke2r1"
         rke2_shared_token: "my_shared_token"
-        public_lb_fqdn: azurerm_public_ip.rancher.fqdn
+        rancher_hostname: "rancher.company.internal"
+        intermediate_ca_chain: abspath("${path.module}/cert/cacerts.pem")
+        intermediate_ca_key: abspath("${path.module}/${local_sensitive_file.intermediate_key.filename}")
       },
       children : {
         control_plane : {

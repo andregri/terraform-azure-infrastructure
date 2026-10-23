@@ -8,6 +8,10 @@ terraform {
       source  = "hashicorp/azurerm"
       version = "5.5.0"
     }
+    tls = {
+      source  = "hashicorp/tls"
+      version = "~> 4.1"
+    }
   }
 }
 
@@ -15,3 +19,5 @@ provider "azurerm" {
   # Configuration options
   features {}
 }
+
+provider "tls" {}

@@ -30,6 +30,20 @@ resource "azurerm_lb_probe" "kube-apiserver" {
   port            = 6443
 }
 
+resource "azurerm_lb_probe" "int-rancher-http" {
+  loadbalancer_id = azurerm_lb.kube-vip.id
+  name            = "rancher-http-probe"
+  protocol        = "Tcp"
+  port            = 80
+}
+
+resource "azurerm_lb_probe" "int-rancher-https" {
+  loadbalancer_id = azurerm_lb.kube-vip.id
+  name            = "rancher-https-probe"
+  protocol        = "Tcp"
+  port            = 443
+}
+
 resource "azurerm_lb_rule" "rancher-registration" {
   loadbalancer_id                = azurerm_lb.kube-vip.id
   name                           = "registration-lb-rule"
@@ -50,6 +64,28 @@ resource "azurerm_lb_rule" "kube-apiserver" {
   frontend_ip_configuration_name = "kube-vip-frontend-ip-conf"
   backend_address_pool_ids       = [azurerm_lb_backend_address_pool.kube-vip.id]
   probe_id                       = azurerm_lb_probe.kube-apiserver.id
+}
+
+resource "azurerm_lb_rule" "int-rancher-http" {
+  loadbalancer_id                = azurerm_lb.kube-vip.id
+  name                           = "rancher-http-lb-rule"
+  protocol                       = "Tcp"
+  frontend_port                  = 80
+  backend_port                   = 80
+  frontend_ip_configuration_name = "kube-vip-frontend-ip-conf"
+  backend_address_pool_ids       = [azurerm_lb_backend_address_pool.kube-vip.id]
+  probe_id                       = azurerm_lb_probe.int-rancher-http.id
+}
+
+resource "azurerm_lb_rule" "int-rancher-https" {
+  loadbalancer_id                = azurerm_lb.kube-vip.id
+  name                           = "rancher-https-lb-rule"
+  protocol                       = "Tcp"
+  frontend_port                  = 443
+  backend_port                   = 443
+  frontend_ip_configuration_name = "kube-vip-frontend-ip-conf"
+  backend_address_pool_ids       = [azurerm_lb_backend_address_pool.kube-vip.id]
+  probe_id                       = azurerm_lb_probe.int-rancher-https.id
 }
 
 resource "azurerm_network_interface_backend_address_pool_association" "kube-vip" {

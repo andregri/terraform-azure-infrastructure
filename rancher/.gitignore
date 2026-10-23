@@ -1,2 +1,5 @@
 env
 inventory.yaml
+*.key
+*-key.pem
+*.pfx
