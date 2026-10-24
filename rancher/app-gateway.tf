@@ -3,7 +3,7 @@ resource "azurerm_virtual_network" "appgw" {
   location            = var.location
   resource_group_name = var.resource_group_name
 
-  address_space = ["10.0.0.0/16"]
+  address_space = ["10.1.0.0/16"]
 }
 
 moved {
@@ -16,7 +16,7 @@ resource "azurerm_subnet" "appgw" {
   resource_group_name  = var.resource_group_name
   virtual_network_name = azurerm_virtual_network.appgw.name
 
-  address_prefixes = ["10.0.10.0/24"]
+  address_prefixes = ["10.1.1.0/24"]
 }
 
 resource "azurerm_network_security_group" "appgw" {
