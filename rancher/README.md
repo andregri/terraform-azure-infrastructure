@@ -2,7 +2,7 @@
 
 Create infrastructure with terraform:
 ```bash
-export TF_VAR_resource_group_name=1-c651e1fe-playground-sandbox
+export TF_VAR_resource_group_name=1-a22a3ad2-playground-sandbox
 
 az login
 
@@ -93,7 +93,9 @@ openssl pkcs12 \
 ```
 
 ```bash
-curl -v --resolve rancher.company.internal:443:10.0.2.4 \
+curl -v http://127.0.0.1
+
+curl -v --resolve rancher.company.internal:443:10.0.2.5 \
   --cacert /etc/rancher/rke2/root-ca.crt \
   https://rancher.company.internal/
 ```

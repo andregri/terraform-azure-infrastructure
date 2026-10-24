@@ -1,4 +1,4 @@
-resource "azurerm_virtual_network" "vnet" {
+resource "azurerm_virtual_network" "appgw" {
   name                = "vnet-appgw"
   location            = var.location
   resource_group_name = var.resource_group_name
@@ -6,12 +6,40 @@ resource "azurerm_virtual_network" "vnet" {
   address_space = ["10.0.0.0/16"]
 }
 
+moved {
+  from = azurerm_virtual_network.vnet
+  to   = azurerm_virtual_network.appgw
+}
+
 resource "azurerm_subnet" "appgw" {
   name                 = "snet-appgw"
   resource_group_name  = var.resource_group_name
-  virtual_network_name = azurerm_virtual_network.vnet.name
+  virtual_network_name = azurerm_virtual_network.appgw.name
 
   address_prefixes = ["10.0.10.0/24"]
+}
+
+resource "azurerm_network_security_group" "appgw" {
+  name                = "appgw-nsg"
+  location            = var.location
+  resource_group_name = var.resource_group_name
+
+  security_rule {
+    name                       = "Allow-GatewayManager"
+    priority                   = 100
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "65200-65535"
+    source_address_prefix      = "GatewayManager"
+    destination_address_prefix = "*"
+  }
+}
+
+resource "azurerm_subnet_network_security_group_association" "appgw" {
+  subnet_id                 = azurerm_subnet.appgw.id
+  network_security_group_id = azurerm_network_security_group.appgw.id
 }
 
 resource "azurerm_public_ip" "appgw" {
@@ -88,10 +116,21 @@ resource "azurerm_application_gateway" "appgw" {
     name                  = local.backend_http_settings_name
     cookie_based_affinity = "Disabled"
 
-    protocol = "Http"
-    port     = 80
+    protocol   = "Http"
+    port       = 80
+    probe_name = "http_probe"
 
     request_timeout = 30
+  }
+
+  probe {
+    name                = "http_probe"
+    protocol            = "Http"
+    path                = "/"
+    interval            = 180
+    timeout             = 180
+    unhealthy_threshold = 3
+    host                = local.rancher_hostname
   }
 
   backend_http_settings {
@@ -105,7 +144,19 @@ resource "azurerm_application_gateway" "appgw" {
       "root-ca"
     ]
 
+    probe_name = "https_probe"
+
     request_timeout = 30
+  }
+
+  probe {
+    name                = "https_probe"
+    protocol            = "Https"
+    path                = "/"
+    interval            = 180
+    timeout             = 180
+    unhealthy_threshold = 3
+    host                = local.rancher_hostname
   }
 
   http_listener {

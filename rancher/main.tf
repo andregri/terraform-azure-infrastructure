@@ -1,10 +1,11 @@
 locals {
   prefix = "rancher"
   start_port = "50022"
+  rancher_hostname = "rancher.company.internal"
 }
 
 module "rancher-cluster" {
-  source = "git::https://github.com/andregri/terraform-module-azure-vm.git?ref=v1.2.1"
+  source = "git::https://github.com/andregri/terraform-module-azure-vm.git?ref=v1.2.3"
 
   enable_bastion      = true
   prefix              = local.prefix
@@ -48,7 +49,7 @@ resource "local_file" "inventory" {
         kube_vip : azurerm_lb.kube-vip.private_ip_address
         rke2_version: "v1.36.4+rke2r1"
         rke2_shared_token: "my_shared_token"
-        rancher_hostname: "rancher.company.internal"
+        rancher_hostname: local.rancher_hostname
         intermediate_ca_chain: abspath("${path.module}/cert/cacerts.pem")
         intermediate_ca_key: abspath("${path.module}/${local_sensitive_file.intermediate_key.filename}")
       },
