@@ -39,6 +39,11 @@ ansible-playbook -i inventory.yaml /Users/andreagrillo/Downloads/github-personal
 
 or download playbooks from: https://github.com/andregri/ansible-roles.git
 
+## Set etc/hosts with app gateway public ip
+```bash
+sudo $app_gw_public_ip rancher.company.internal
+```
+
 ## Run kubectl commands
 Login to the first VM:
 ```bash
@@ -51,51 +56,40 @@ sudo su -
 alias kubectl="/var/lib/rancher/rke2/bin/kubectl --kubeconfig /etc/rancher/rke2/rke2.yaml"
 ```
 
-## Generate certificate
-Generate key and cert:
+## Test
+
 ```bash
-openssl req \
-  -x509 \
-  -newkey rsa:2048 \
-  -sha256 \
-  -nodes \
-  -keyout appgw.key \
-  -out appgw.crt \
-  -days 365 \
-  -subj "/CN=myapp.example.com" \
-  -addext "subjectAltName=DNS:myapp.example.com"
+curl -vk --resolve rancher.company.internal:443:10.0.2.5 https://rancher.company.internal/
+curl -vk --cacert /etc/rancher/rke2/cacerts.pem --resolve rancher.company.internal:443:10.0.2.5 https://rancher.company.internal/
 ```
 
-Create a PFX/P12
+show certificate served by traaefik:
 ```bash
-openssl pkcs12 \
-  -export \
-  -out appgw.pfx \
-  -inkey appgw.key \
-  -in appgw.crt \
-  -name "appgw-cert"
+openssl s_client \
+  -connect 10.0.2.5:443 \
+  -servername rancher.company.internal \
+  -showcerts </dev/null
 ```
 
-check the certificate:
+verify cert chain:
 ```bash
-openssl x509 \
-  -in appgw.crt \
-  -text \
-  -noout
+openssl s_client \
+  -connect 10.0.2.5:443 \
+  -servername rancher.company.internal \
+  -CAfile /etc/rancher/rke2/cacerts.pem \
+  -verify_return_error </dev/null
 ```
 
-check the pfx:
+Test app gw connectivity:
 ```bash
-openssl pkcs12 \
-  -in appgw.pfx \
-  -info \
-  -noout
-```
+nc -vz -w 5 168.61.42.77 80
+nc -vz -w 5 168.61.42.77 443
 
-```bash
-curl -v http://127.0.0.1
+curl -v --connect-timeout 5 \
+  --resolve rancher.company.internal:80:168.61.42.77 \
+  http://rancher.company.internal/
 
-curl -v --resolve rancher.company.internal:443:10.0.2.5 \
-  --cacert /etc/rancher/rke2/root-ca.crt \
+curl -vk --connect-timeout 5 \
+  --resolve rancher.company.internal:443:168.61.42.77 \
   https://rancher.company.internal/
 ```
