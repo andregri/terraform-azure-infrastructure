@@ -50,6 +50,7 @@ resource "local_file" "inventory" {
         rke2_version: "v1.36.4+rke2r1"
         rke2_shared_token: "my_shared_token"
         rancher_hostname: local.rancher_hostname
+        rancher_bootstrap_password: "admin"
         intermediate_ca_chain: abspath("${path.module}/cert/cacerts.pem")
         intermediate_ca_key: abspath("${path.module}/${local_sensitive_file.intermediate_key.filename}")
       },
