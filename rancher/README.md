@@ -35,6 +35,11 @@ git clone https://github.com/andregri/ansible-playbook-rke2-rancher.git /tmp/ans
 ansible-playbook -i inventory.yaml /tmp/ansible-playbook-rke2-rancher/install-rke2-rancher-private-ca.yaml  -u testadmin -k
 ```
 
+Automatic rke2 upgrades: install system-upgrade-controller:
+```bash
+ansible-playbook -i inventory.yaml /tmp/ansible-playbook-rke2-rancher/playbooks/080-install-rke2-system-upgrade-controller.yaml  -u testadmin -k
+```
+
 ## Set etc/hosts with app gateway public ip
 Add racher hostname to /etc/hosts:
 ```bash
