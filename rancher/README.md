@@ -2,7 +2,7 @@
 
 Create infrastructure with terraform:
 ```bash
-export TF_VAR_resource_group_name=1-a22a3ad2-playground-sandbox
+export TF_VAR_resource_group_name=1-219fc98c-playground-sandbox
 
 az login
 
@@ -27,17 +27,13 @@ az network bastion tunnel --name "${BASTION_HOST_NAME}" --resource-group ${TF_VA
 az network bastion tunnel --name "${BASTION_HOST_NAME}" --resource-group ${TF_VAR_resource_group_name} --target-resource-id ${VM_HOST_ID_1} --resource-port "22" --port "${VM_1_PORT}" &
 az network bastion tunnel --name "${BASTION_HOST_NAME}" --resource-group ${TF_VAR_resource_group_name} --target-resource-id ${VM_HOST_ID_2} --resource-port "22" --port "${VM_2_PORT}" &
 az network bastion tunnel --name "${BASTION_HOST_NAME}" --resource-group ${TF_VAR_resource_group_name} --target-resource-id ${VM_HOST_ID_3} --resource-port "22" --port "${VM_3_PORT}" &
-
-ansible-playbook -i inventory.yaml rke2-playbook.yaml -u testadmin -k
-ansible-playbook -i inventory.yaml rancher-playbook.yaml -u testadmin -k
 ```
 
-Or run a more complete playbook:
+Git clone and run rancher playbook:
 ```bash
-ansible-playbook -i inventory.yaml /Users/andreagrillo/Downloads/github-personal/ansible-playbook-rke2-rancher/install-rke2-rancher-private-ca.yaml  -u testadmin -k
+git clone https://github.com/andregri/ansible-playbook-rke2-rancher.git /tmp/ansible-playbook-rke2-rancher
+ansible-playbook -i inventory.yaml /tmp/ansible-playbook-rke2-rancher/install-rke2-rancher-private-ca.yaml  -u testadmin -k
 ```
-
-or download playbooks from: https://github.com/andregri/ansible-roles.git
 
 ## Set etc/hosts with app gateway public ip
 ```bash
