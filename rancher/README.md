@@ -36,33 +36,49 @@ ansible-playbook -i inventory.yaml /tmp/ansible-playbook-rke2-rancher/install-rk
 ```
 
 ## Set etc/hosts with app gateway public ip
+Add racher hostname to /etc/hosts:
 ```bash
-sudo $app_gw_public_ip rancher.company.internal
+APPGW_PUBLIC_IP=$(terraform output -raw app_gateway_public_ip)
+echo "${APPGW_PUBLIC_IP} rancher.company.internal" | sudo tee -a /etc/hosts
 ```
 
-## Run kubectl commands
-Login to the first VM:
+Test connectivity towards app gateway:
+```bash
+nc -vz -w 5 ${APPGW_PUBLIC_IP} 80
+nc -vz -w 5 ${APPGW_PUBLIC_IP} 443
+
+curl -v --connect-timeout 5 \
+  --resolve rancher.company.internal:80:${APPGW_PUBLIC_IP} \
+  http://rancher.company.internal/
+
+curl -vk --connect-timeout 5 \
+  --resolve rancher.company.internal:443:${APPGW_PUBLIC_IP} \
+  https://rancher.company.internal/
+```
+
+## SSH into vm0 and use kubectl
+Login into vm0:
 ```bash
 ssh testadmin@127.0.0.1 -p ${VM_0_PORT} -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null
 ```
 
-Inside the VM:
+Alias kubectl:
 ```bash
 sudo su -
 alias kubectl="/var/lib/rancher/rke2/bin/kubectl --kubeconfig /etc/rancher/rke2/rke2.yaml"
 ```
 
-## Test
-
+Test connectivity:
 ```bash
-curl -vk --resolve rancher.company.internal:443:10.0.2.5 https://rancher.company.internal/
-curl -vk --cacert /etc/rancher/rke2/cacerts.pem --resolve rancher.company.internal:443:10.0.2.5 https://rancher.company.internal/
+LB_PRIVATE_IP=$(terraform output -raw load_balancer_internal_ip_addr)
+curl -vk --resolve rancher.company.internal:443:${LB_PRIVATE_IP} https://rancher.company.internal/
+curl -vk --cacert /etc/rancher/rke2/cacerts.pem --resolve rancher.company.internal:443:${LB_PRIVATE_IP} https://rancher.company.internal/
 ```
 
 show certificate served by traaefik:
 ```bash
 openssl s_client \
-  -connect 10.0.2.5:443 \
+  -connect ${LB_PRIVATE_IP}:443 \
   -servername rancher.company.internal \
   -showcerts </dev/null
 ```
@@ -70,22 +86,8 @@ openssl s_client \
 verify cert chain:
 ```bash
 openssl s_client \
-  -connect 10.0.2.5:443 \
+  -connect ${LB_PRIVATE_IP}:443 \
   -servername rancher.company.internal \
   -CAfile /etc/rancher/rke2/cacerts.pem \
   -verify_return_error </dev/null
-```
-
-Test app gw connectivity:
-```bash
-nc -vz -w 5 168.61.42.77 80
-nc -vz -w 5 168.61.42.77 443
-
-curl -v --connect-timeout 5 \
-  --resolve rancher.company.internal:80:168.61.42.77 \
-  http://rancher.company.internal/
-
-curl -vk --connect-timeout 5 \
-  --resolve rancher.company.internal:443:168.61.42.77 \
-  https://rancher.company.internal/
 ```
