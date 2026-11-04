@@ -55,7 +55,7 @@ resource "azurerm_network_security_group" "appgw" {
     access                     = "Allow"
     protocol                   = "Tcp"
     source_port_range          = "*"
-    destination_port_range     = "443"
+    destination_port_range     = var.https_port
     source_address_prefix      = "*"
     destination_address_prefix = "*"
   }
@@ -127,7 +127,7 @@ resource "azurerm_application_gateway" "appgw" {
 
   frontend_port {
     name = local.frontend_port_name_https
-    port = 443
+    port = var.https_port
   }
 
   backend_address_pool {
@@ -162,7 +162,7 @@ resource "azurerm_application_gateway" "appgw" {
     cookie_based_affinity = "Disabled"
 
     protocol = "Https"
-    port     = 443
+    port     = var.https_port
 
     trusted_root_certificate_names = [
       "root-ca"

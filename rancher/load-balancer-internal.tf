@@ -41,7 +41,7 @@ resource "azurerm_lb_probe" "int-rancher-https" {
   loadbalancer_id = azurerm_lb.kube-vip.id
   name            = "rancher-https-probe"
   protocol        = "Tcp"
-  port            = 443
+  port            = var.https_port
 }
 
 resource "azurerm_lb_rule" "rancher-registration" {
@@ -81,8 +81,8 @@ resource "azurerm_lb_rule" "int-rancher-https" {
   loadbalancer_id                = azurerm_lb.kube-vip.id
   name                           = "rancher-https-lb-rule"
   protocol                       = "Tcp"
-  frontend_port                  = 443
-  backend_port                   = 443
+  frontend_port                  = var.https_port
+  backend_port                   = var.https_port
   frontend_ip_configuration_name = "kube-vip-frontend-ip-conf"
   backend_address_pool_ids       = [azurerm_lb_backend_address_pool.kube-vip.id]
   probe_id                       = azurerm_lb_probe.int-rancher-https.id
@@ -93,4 +93,27 @@ resource "azurerm_network_interface_backend_address_pool_association" "kube-vip"
   network_interface_id    = each.value
   ip_configuration_name   = "testconfiguration-${each.key}"
   backend_address_pool_id = azurerm_lb_backend_address_pool.kube-vip.id
+}
+
+resource "azurerm_network_security_group" "rancher-https" {
+  name                = "rancher-https-nsg"
+  location            = var.location
+  resource_group_name = var.resource_group_name
+
+  security_rule {
+    name                       = "Allow-Https-From-Internet"
+    priority                   = 100
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = var.https_port
+    source_address_prefix      = "10.1.0.0/16"
+    destination_address_prefix = "*"
+  }
+}
+
+resource "azurerm_subnet_network_security_group_association" "rancher-https" {
+  subnet_id                 = module.rancher-cluster.subnet_id
+  network_security_group_id = azurerm_network_security_group.rancher-https.id
 }
