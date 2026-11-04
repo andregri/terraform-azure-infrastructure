@@ -20,8 +20,7 @@ make tf-apply FOLDER=rancher
 
 Post configuration with ansible:
 ```bash
-cd rancher
-source env
+source rancher/env
 
 az network bastion tunnel --name "${BASTION_HOST_NAME}" --resource-group ${TF_VAR_resource_group_name} --target-resource-id ${VM_HOST_ID_0} --resource-port "22" --port "${VM_0_PORT}" &
 az network bastion tunnel --name "${BASTION_HOST_NAME}" --resource-group ${TF_VAR_resource_group_name} --target-resource-id ${VM_HOST_ID_1} --resource-port "22" --port "${VM_1_PORT}" &
@@ -32,7 +31,7 @@ az network bastion tunnel --name "${BASTION_HOST_NAME}" --resource-group ${TF_VA
 Git clone and run rancher playbook:
 ```bash
 git clone https://github.com/andregri/ansible-playbook-rke2-rancher.git /tmp/ansible-playbook-rke2-rancher
-ansible-playbook -i inventory.yaml /tmp/ansible-playbook-rke2-rancher/install-rke2-rancher-private-ca.yaml  -u testadmin -k
+ansible-playbook -i rancher/inventory.yaml /tmp/ansible-playbook-rke2-rancher/install-rke2-rancher-private-ca.yaml  -u testadmin -k
 ```
 
 Automatic rke2 upgrades: install system-upgrade-controller:
