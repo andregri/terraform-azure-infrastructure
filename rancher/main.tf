@@ -47,14 +47,25 @@ resource "local_file" "inventory" {
     all : {
       vars : {
         kube_vip : azurerm_lb.kube-vip.private_ip_address
-        rke2_version: "v1.36.4+rke2r1"
+        rke2_version: "v1.36.6+rke2r1"
         rke2_shared_token: "my_shared_token"
         rancher_hostname: local.rancher_hostname
         rancher_bootstrap_password: "admin"
         intermediate_ca_chain: abspath("${path.module}/cert/cacerts.pem")
         intermediate_ca_key: abspath("${path.module}/${local_sensitive_file.intermediate_key.filename}")
+        registry_username: azurerm_container_registry.acr.admin_username
+        registry_password: azurerm_container_registry.acr.admin_password
+        registry_url: azurerm_container_registry.acr.login_server
+        registry_name: azurerm_container_registry.acr.name
       },
       children : {
+        localhost : {
+          hosts : {
+            localhost : {
+              ansible_connection : "local"
+            }
+          }
+        },
         control_plane : {
           hosts : {
             for i, host in module.rancher-cluster.vm_hostnames :
