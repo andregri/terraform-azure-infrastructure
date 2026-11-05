@@ -57,6 +57,8 @@ resource "local_file" "inventory" {
         registry_password: azurerm_container_registry.acr.admin_password
         registry_url: azurerm_container_registry.acr.login_server
         registry_name: azurerm_container_registry.acr.name
+        cert_manager_version: "v1.21.3"
+        rancher_version: "2.15.3"
       },
       children : {
         localhost : {
