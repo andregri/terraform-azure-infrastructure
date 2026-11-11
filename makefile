@@ -26,7 +26,7 @@ kubeadm-cluster:
 .PHONY: tf-apply
 tf-apply:
 	@echo "Apply terraform configuration in $(FOLDER)/..."
-	cd $(FOLDER) && terraform apply -auto-approve
+	cd $(FOLDER) && terraform apply -auto-approve $(TF_APPLY_ARGS)
 
 .PHONY: tf-cleanup
 tf-cleanup:

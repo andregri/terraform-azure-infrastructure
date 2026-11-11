@@ -46,19 +46,31 @@ resource "local_file" "inventory" {
   content = yamlencode({
     all : {
       vars : {
+        # rke2
         kube_vip : azurerm_lb.kube-vip.private_ip_address
         rke2_version: "v1.36.6+rke2r1"
         rke2_shared_token: "my_shared_token"
-        rancher_hostname: local.rancher_hostname
-        rancher_bootstrap_password: "admin"
+        # cert
         intermediate_ca_chain: abspath("${path.module}/cert/cacerts.pem")
         intermediate_ca_key: abspath("${path.module}/${local_sensitive_file.intermediate_key.filename}")
-        registry_username: azurerm_container_registry.acr.admin_username
-        registry_password: azurerm_container_registry.acr.admin_password
+        # registry credentials
         registry_url: azurerm_container_registry.acr.login_server
         registry_name: azurerm_container_registry.acr.name
+        # cert manager
         cert_manager_version: "v1.21.3"
+        # rancher
         rancher_version: "2.15.3"
+        rancher_hostname: local.rancher_hostname
+        rancher_bootstrap_password: "admin"
+        # flux
+        flux_repo_url: "https://github.com/andregri/kubernetes-pod-example.git"
+        flux_repo_branch: "main"
+        flux_repo_path: "manifests"
+        # keyvault
+        keyvault_name: azurerm_key_vault.kv.name
+        tenant_id: var.tenant_id
+        client_id: var.client_id
+        client_secret: var.client_secret
       },
       children : {
         localhost : {

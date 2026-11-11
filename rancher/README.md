@@ -2,7 +2,16 @@
 
 Create infrastructure with terraform:
 ```bash
-export TF_VAR_resource_group_name=1-80dd7447-playground-sandbox
+export TF_VAR_resource_group_name=1-86f42e06-playground-sandbox
+az account show --query tenantId -o tsv
+
+# create secrets.tfvars
+cat > rancher/secrets.tfvars <<EOF
+flux_git_token=
+tenant_id=
+client_id=
+client_secret=
+EOF
 
 az login
 
@@ -13,7 +22,7 @@ make tf-apply FOLDER=bootstrap
 make tf-cleanup FOLDER=rancher
 make tf-init-backend FOLDER=rancher
 cd rancher && terraform apply -replace="terraform_data.appgw_pfx" -auto-approve && cd ..
-make tf-apply FOLDER=rancher
+make tf-apply FOLDER=rancher TF_APPLY_ARGS="-var-file=secrets.tfvars"
 ```
 
 ## Ansible: install rke2 + rancher prime
